@@ -8,20 +8,22 @@
 
 
 # input / output
+ver="SL14a"
 list=$1
 lPath="./logs"
-input="/projecta/projectdirs/starprod/embedding/JetEmbedding2012/pp200_EmbeddingOutput_COMPLETE/pp200_production_2012/pt2_3_100_20153801/P12id.SL12d/2012/"
-output="$PWD/output/pt2_3/"
+input="/projecta/projectdirs/starprod/embedding/production2009_200GeV/Jet_pp200_2009.elz17/SL11d_embed"
+output="$PWD/output/pt15_25"
+prefix="pt15_25_"
   
 # various parameters
 dStart=${#output}
-rStart=$(expr $dStart + 4)
-fStart=$(expr $rStart + 9)
-oldEnd="matchWithEmc.root"
-badEnd="badWithEmc.root"
+pStart=${#prefix}
+fStart=$(expr $dStart + 1)
+rStart=$(expr $fStart + $pStart)
+oldEnd="thirdmaker.root"
+badEnd="badmaker.root"
 dstEnd="MuDst.root"
-gntEnd="geant.root"
-newEnd="matchWithEmc.root"
+newEnd="thirdmaker.root"
 logEnd="fix.log"
 
 
@@ -29,30 +31,28 @@ printf "\nReading in '$list'...\n"
 
 for file in $(cat $list); do
 
-  # determine day, run, and old filename
-  day=$(echo ${file:$dStart:3})
+  # determine run and old filename
   run=$(echo ${file:$rStart:8})
   old=$(echo ${file:$fStart})
   bad=$(echo ${old/$oldEnd/$badEnd})
   dst=$(echo ${old/$oldEnd/$dstEnd})
-  gnt=$(echo ${old/$oldEnd/$gntEnd})
   new=$(echo ${old/$oldEnd/$newEnd})
   log=$(echo ${old/$oldEnd/$logEnd})
 
   # create new filenames and arguments
-  iPath=$input$day"/"$run
-  oPath=$output$day"/"$run
+  iPath=$input"/"$run
+  oPath=$output
   oldPath=$oPath"/"$old
   badPath=$oPath"/"$bad
   dstPath=$iPath"/"$dst
-  gntPath=$iPath"/"$gnt
   newPath=$oPath"/"$new
   logPath=$lPath"/"$log
 
   # generate new file
   if [ -a $oldPath ]; then
-    mv $oldPath $badPath
-    root4star -b -q bemcCalibMacro.C\(1000,\"$dstPath\",\"$newPath\",1,\"$gntPath\"\) > $logPath;
+    mv $oldpath $badPath
+    starver $ver
+    root4star -b -q doFullJetTree.C\(2000000,\"$newPath\",\"$dstPath\"\) > $logPath;
   fi
 
   printf "  Regenerated file '$file'\n"
