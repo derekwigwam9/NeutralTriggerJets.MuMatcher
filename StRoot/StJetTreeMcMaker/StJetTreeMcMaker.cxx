@@ -9,6 +9,9 @@
 //Date  07/20/2017: added additional branches to calculate E/p for
 //                  electrons and hadrons.
 //                      -Derek
+//Date  02/19/2018: added tree and variables to hold StMuMcTrack
+//                  variables
+//                      -Derek
 //____________________________________________________________
 
 
@@ -75,6 +78,8 @@
 #include "StMuDSTMaker/COMMON/StMuBTofPidTraits.h"
 #include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
 #include "StMuDSTMaker/COMMON/StMuTrack.h"
+#include "StMuDSTMaker/COMMON/StMuMcTrack.h"  // [Derek, 02.19.2018]
+#include "StMuDSTMaker/COMMON/StMuMcVertex.h"  // [Derek, 02.20.2018]
 #include "StTriggerData.h"
 
  
@@ -168,6 +173,64 @@ Int_t StJetTreeMcMaker::Init(){
   hPt_hadr  -> Sumw2();
 
 // ***************************************************************************/
+
+
+  // for comparing particle to detector level [Derek, 02.19.208]
+  _tMcTracks = new TTree("McTracks", "a tree for MC tracks");
+  _tMcTracks -> Branch("EventId", &_McEvtId, "EventId/I");
+  _tMcTracks -> Branch("RunId", &_McRunId, "RunId/I");
+  _tMcTracks -> Branch("NumTrks", &_McNtrk, "NumTrks/I");
+  _tMcTracks -> Branch("MuVtxX", &_MuVx, "MuVtxX/D");
+  _tMcTracks -> Branch("MuVtxY", &_MuVy, "MuVtxY/D");
+  _tMcTracks -> Branch("MuVtxZ", &_MuVz, "MuVtxZ/D");
+  _tMcTracks -> Branch("McVtxX", &_McVx, "McVtxX/D");
+  _tMcTracks -> Branch("McVtxY", &_McVy, "McVtxY/D");
+  _tMcTracks -> Branch("McVtxZ", &_McVz, "McVtxZ/D");
+  _tMcTracks -> Branch("IdTrk", &_McIdTrk);
+  _tMcTracks -> Branch("IdGeant", &_McIdGnt);
+  _tMcTracks -> Branch("IdVx", &_McIdVx);
+  _tMcTracks -> Branch("IdVxEnd", &_McIdVxEnd);
+  _tMcTracks -> Branch("IntrVtx", &_McIntrVtx);
+  _tMcTracks -> Branch("IsShower", &_McIsShower);
+  _tMcTracks -> Branch("Charge", &_McChrg);
+  _tMcTracks -> Branch("Rapidity", &_McRap);
+  _tMcTracks -> Branch("Eta", &_McEta);
+  _tMcTracks -> Branch("Phi", &_McPhi);
+  _tMcTracks -> Branch("Px", &_McPx);
+  _tMcTracks -> Branch("Py", &_McPy);
+  _tMcTracks -> Branch("Pz", &_McPz);
+  _tMcTracks -> Branch("Pt", &_McPt);
+  _tMcTracks -> Branch("Ptot", &_McPtot);
+  _tMcTracks -> Branch("Energy", &_McEne);
+  _tMcTracks -> SetAutoSave(-500000000);
+
+  // initialize event leaves
+  _McEvtId = -999;
+  _McRunId = -999;
+  _McNtrk  = -999;
+  _MuVx    = -999.;
+  _MuVy    = -999.;
+  _MuVz    = -999.;
+  _McVx    = -999.;
+  _McVy    = -999.;
+  _McVz    = -999.;
+  // initialize track leaves
+  _McIdTrk.clear();
+  _McIdGnt.clear();
+  _McIdVx.clear();
+  _McIdVxEnd.clear();
+  _McIntrVtx.clear();
+  _McIsShower.clear();
+  _McChrg.clear();
+  _McRap.clear();
+  _McEta.clear();
+  _McPhi.clear();
+  _McPx.clear();
+  _McPy.clear();
+  _McPz.clear();
+  _McPt.clear();
+  _McPtot.clear();
+  _McEne.clear();
 
   return StMaker::Init();
 }
@@ -331,6 +394,12 @@ Int_t StJetTreeMcMaker::doMuEvent(Int_t & runIdEvnt)
     float    pidP = muDst->primaryTracks(i)->nSigmaProton();
     float    pidE = muDst->primaryTracks(i)->nSigmaElectron();
 
+    // for comparing particle to detector level [Derek, 02.19.2018]
+    Int_t idTruth = muDst -> primaryTracks(i) -> idTruth();
+    Int_t qaTruth = muDst -> primaryTracks(i) -> qaTruth();
+    Int_t idParVx = muDst -> primaryTracks(i) -> idParentVx();
+
+
     // **** FOR DEBUGGING **** //
     // * [Derek, 02.20.2017] * //
     if (debug) {
@@ -364,9 +433,9 @@ Int_t StJetTreeMcMaker::doMuEvent(Int_t & runIdEvnt)
     MuTrackInfo.SetdEdxHits(nHitdedx);
     MuTrackInfo.SetFirstZPoint(0);
     MuTrackInfo.SetLastZPoint(0);
-    MuTrackInfo.SetTOFSigElectron(0);
-    MuTrackInfo.SetTOFSigPion(0);
-    MuTrackInfo.SetTOFSigKaon(0);
+    MuTrackInfo.SetTOFSigElectron((Double_t) idTruth);
+    MuTrackInfo.SetTOFSigPion((Double_t) qaTruth);
+    MuTrackInfo.SetTOFSigKaon((Double_t) idParVx);
     MuTrackInfo.SetTOFSigProton(0);
     MuTrackInfo.SetPathLength(0);
     MuTrackInfo.SettimeOfflight(0);
@@ -375,6 +444,7 @@ Int_t StJetTreeMcMaker::doMuEvent(Int_t & runIdEvnt)
 
     Muevent->AddTrack(&MuTrackInfo,mutrk_counter);
     mutrk_counter++;
+
 
     //_________Projecting on
 
@@ -429,10 +499,8 @@ Int_t StJetTreeMcMaker::doMuEvent(Int_t & runIdEvnt)
       //cout <<".................matched trak: "<<matchedTrk<<" out of   "<<mutrk_counter<<endl;
   }
 
-
-
-
   }  // end track loop
+
 
   // **** FOR DEBUGGING **** //
   // * [Derek, 02.20.2017] * //
@@ -440,6 +508,96 @@ Int_t StJetTreeMcMaker::doMuEvent(Int_t & runIdEvnt)
     cout << " END TRACK INFO" << endl;
   }
   // *********************** //
+
+
+  // for comparing particle to detector level [Derek, 02.20.2018]
+  _McEvtId = -999;
+  _McRunId = -999;
+  _McNtrk  = -999;
+  _MuVx    = -999.;
+  _MuVy    = -999.;
+  _MuVz    = -999.;
+  _McVx    = -999.;
+  _McVy    = -999.;
+  _McVz    = -999.;
+  _McIdTrk.clear();
+  _McIdGnt.clear();
+  _McIdVx.clear();
+  _McIdVxEnd.clear();
+  _McIntrVtx.clear();
+  _McIsShower.clear();
+  _McChrg.clear();
+  _McRap.clear();
+  _McEta.clear();
+  _McPhi.clear();
+  _McPx.clear();
+  _McPy.clear();
+  _McPz.clear();
+  _McPt.clear();
+  _McPtot.clear();
+  _McEne.clear();
+
+  // mc track loop
+  const Int_t nMcTrks = (Int_t) muDst -> mcArray(1) -> GetEntries();
+  for (Int_t iMcTrk = 0; iMcTrk < nMcTrks; iMcTrk++) {
+
+    // grab pointer
+    const StMuMcTrack *mcTrk = (StMuMcTrack*) muDst -> mcArray(1) -> UncheckedAt(iMcTrk);
+
+    // mc track info
+    const Int_t    idTrk    = mcTrk -> Id();
+    const Int_t    idGnt    = mcTrk -> GePid();
+    const Int_t    idVx     = mcTrk -> IdVx();
+    const Int_t    idVxEnd  = mcTrk -> IdVxEnd();
+    const Int_t    intrVtx  = mcTrk -> ItrmdVertex();
+    const Bool_t   isShower = mcTrk -> IsShower();
+    const Double_t charge   = mcTrk -> Charge();
+    const Double_t rap      = mcTrk -> Rapidity();
+    const Double_t eta      = mcTrk -> Eta();
+    const Double_t phi      = mcTrk -> Pxyz().phi();
+    const Double_t pX       = mcTrk -> Pxyz().x();
+    const Double_t pY       = mcTrk -> Pxyz().y();
+    const Double_t pZ       = mcTrk -> Pxyz().z();
+    const Double_t pT       = mcTrk -> pT();
+    const Double_t pTot     = mcTrk -> Ptot();
+    const Double_t energy   = mcTrk -> E();
+
+    // fill vectors
+    _McIdTrk.push_back(idTrk);
+    _McIdGnt.push_back(idGnt);
+    _McIdVx.push_back(idVx);
+    _McIdVxEnd.push_back(idVxEnd);
+    _McIntrVtx.push_back(intrVtx);
+    _McIsShower.push_back(isShower);
+    _McChrg.push_back(charge);
+    _McRap.push_back(rap);
+    _McEta.push_back(eta);
+    _McPhi.push_back(phi);
+    _McPx.push_back(pX);
+    _McPy.push_back(pY);
+    _McPz.push_back(pZ);
+    _McPt.push_back(pT);
+    _McPtot.push_back(pTot);
+    _McEne.push_back(energy);
+
+  }  // end mc track loop
+
+  // get mc vertex
+  const StMuMcVertex *mcVtx = (StMuMcVertex*) muDst -> mcArray(0) -> UncheckedAt(0);
+  const Double_t     mcVx   = mcVtx -> XyzV().x();
+  const Double_t     mcVy   = mcVtx -> XyzV().y();
+  const Double_t     mcVz   = mcVtx -> XyzV().z();
+
+  // mc event info
+  _McEvtId = eventId;
+  _McRunId = RunId;
+  _McNtrk  = nMcTrks;
+  _MuVx    = Vx;
+  _MuVy    = Vy;
+  _MuVz    = Vz;
+  _McVx    = mcVx;
+  _McVy    = mcVy;
+  _McVz    = mcVz;
 
 
   //cout<<" attempting to read BEMC ____________"<<endl;
@@ -830,6 +988,9 @@ Int_t StJetTreeMcMaker::doMuEvent(Int_t & runIdEvnt)
   Muevent->SetEventAttributes(MuEvValues);
 
   outTree_mu->Fill();
+
+  // for comparing particle to detector tracks [Derek, 02.20.2018]
+  _tMcTracks -> Fill();
 
   
   runIdEvnt =0; // initialize with a non existing runid

@@ -23,6 +23,9 @@
 //Date  07/2017: added additional branches to calculate E/p for
 //               electrons and hadrons.
 //                                           - Derek
+//Date  02/2018: added tree and variables to hold StMuMcTrack
+//               variables
+//                                           - Derek
 //____________________________________________________________
 
 
@@ -92,6 +95,8 @@ class  TLorentzVector;
 class StMuDst;
 class StMuEvent;
 class StMuTrack;
+class StMuMcTrack;  // [Derek, 02.19.2018] 
+class StMuMcVertex;  // [Derek, 02.20.2018]
 class StEmcPosition;
 class StBemcTables; //v3.14
 
@@ -191,8 +196,40 @@ class StJetTreeMcMaker : public StMaker
   int  mEventCounter;
   TFile* File_output;
   char* outFile;
-  
-  
+
+
+  // for comparing particle to detector level [Derek, 02.19.2018]
+  TTree *_tMcTracks;
+
+  // mc event leaves
+  Int_t    _McEvtId;
+  Int_t    _McRunId;
+  Int_t    _McNtrk;
+  Double_t _MuVx;
+  Double_t _MuVy;
+  Double_t _MuVz;
+  Double_t _McVx;
+  Double_t _McVy;
+  Double_t _McVz;
+  // mc track leaves
+  vector<Int_t>    _McIdTrk;
+  vector<Int_t>    _McIdGnt;
+  vector<Int_t>    _McIdVx;
+  vector<Int_t>    _McIdVxEnd;
+  vector<Int_t>    _McIntrVtx;
+  vector<Bool_t>   _McIsShower;
+  vector<Double_t> _McChrg;
+  vector<Double_t> _McRap;
+  vector<Double_t> _McEta;
+  vector<Double_t> _McPhi;
+  vector<Double_t> _McPx;
+  vector<Double_t> _McPy;
+  vector<Double_t> _McPz;
+  vector<Double_t> _McPt;
+  vector<Double_t> _McPtot;
+  vector<Double_t> _McEne;
+
+ 
   ///________
   
   TBranch *eventBranch;
