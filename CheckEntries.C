@@ -26,13 +26,14 @@ void CheckEntries() {
 
 
   // initialize output
-  TFile  *fOut   = new TFile("./output/pt35.check.root", "recreate");
+  TFile  *fOut   = new TFile("./pt9.checkWithMc.root", "recreate");
   TChain *gChain = new TChain("GfmtoDst_gnt");
   TChain *uChain = new TChain("GfmtoDst_mu");
+  TChain *tChain = new TChain("McTracks");
 
   // open streams
-  ifstream files("pt35.geOut.list");
-  ofstream bad("pt35.geBad.list");
+  ifstream files("pt9.checkWithMc.list");
+  ofstream bad("pt9.bad.list");
   if (!files) {
     cerr << "PANIC: input file couldn't be opened!" << endl;
     assert(files);
@@ -44,13 +45,15 @@ void CheckEntries() {
 
   Int_t  g;
   Int_t  u;
+  Int_t  t;
   string f;
   while (files) {
     files >> f;
     TString file(f);
     g = gChain -> Add(file.Data(), 0);
     u = uChain -> Add(file.Data(), 0);
-    if ((g == 0) || (u == 0)) {
+    t = tChain -> Add(file.Data(), 0);
+    if ((g == 0) || (u == 0) || (t == 0)) {
       cout << "    Bad file:  '" << f << "'..." << endl;
       bad << f;
       bad << endl;
