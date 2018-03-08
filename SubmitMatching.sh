@@ -13,10 +13,10 @@
 
 # job parameters
 Path="/projecta/projectdirs/starprod/embedding/production2009_200GeV/Jet_pp200_2009.elz17/SL11d_embed"
-MuList="pt35.mudst.list"
-GeList="pt35.geant.list"
-Prefix="pt35_-1"
-Label="match"
+MuList="pt2.mudst.list"
+GeList="pt2.geant.list"
+Prefix="pt2_3"
+Label="matchWithMcInfo"
 Suffix=".root"
 Nevnt=1000
 Nfile=1
@@ -42,7 +42,7 @@ printf "\n  Running submission script...\n"
 declare -a Runs
 declare -a Files
 
-# loop over days
+
 (( nRdir=0 ))
 cd $Path
 for rDir in {.*,*}; do
@@ -54,9 +54,9 @@ for rDir in {.*,*}; do
   fi
 done  # end of run loop
 
-# at most there will be 26 files in a run
+# at most there will be 36 files in a run
 (( nFiles=0 ))
-for f in `seq 0 26`; do
+for f in `seq 0 36`; do
   Files[nFiles]=$f;
   (( nFiles++ ))
 done
@@ -122,6 +122,12 @@ out='\\\"'$opd"/"'$FILEBASENAME.'$Label'.root\\\"'
 arg=$(echo -e "\($Nevnt,$mu,$out,$Nfile,$ge\)")
 ./GenerateXML.sh $xml $sim $num $sub $ver $mac $arg $lst $log
 printf "    Generated xml '$xml'...\n"
+
+# generate log directory
+if [ ! -d $log ]; then
+  printf "  SubmitMatching.sh: Creating directory '$log'\n"
+  mkdir $log
+fi
 
 # submit job
 if [ ! -d $sub ]; then
